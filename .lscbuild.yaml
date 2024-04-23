@@ -1,0 +1,13 @@
+version: 1
+plugin:
+  lifecycle:
+    initialize:
+      cmd: |-
+        npm ci
+        npm run initialize
+    run:
+      cmd: |-
+        npm run run
+    finalize:
+      cmd: |-
+        npm run finalize
