@@ -43,25 +43,36 @@ if (setValue.startsWith("$")) {
 console.log(QUICKOPS_KVS_MODE, QUICKOPS_KVS_KEY, setValue || "");
 
 const endpoint = `${QUICKOPS_BASE_URL}/v1/context/kvs`;
-const res = await fetch(endpoint, {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${QUICKOPS_TOKEN}`,
-    "Content-Type": "application/json",
-    "User-Agent": `common-creation_${packageJson.name}/${packageJson.version}`,
-  },
-  body: JSON.stringify({
-    mode: QUICKOPS_KVS_MODE,
-    key: QUICKOPS_KVS_KEY,
-    value: QUICKOPS_KVS_MODE === "SET" ? setValue : undefined,
-  }),
-});
-const { value } = await res.json();
+let value;
+
+for (let i = 1; i <= 5; i++) {
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${QUICKOPS_TOKEN}`,
+        "Content-Type": "application/json",
+        "User-Agent": `common-creation_${packageJson.name}/${packageJson.version}`,
+      },
+      body: JSON.stringify({
+        mode: QUICKOPS_KVS_MODE,
+        key: QUICKOPS_KVS_KEY,
+        value: QUICKOPS_KVS_MODE === "SET" ? setValue : undefined,
+      }),
+    });
+    const body = await res.json();
+    value = body.value;
+    break;
+  } catch (err) {
+    console.error(err);
+    await new Promise((resolve) => setTimeout(resolve, 1000 * (i * i)));
+  }
+  if (i === 5) {
+    throw new Error("failed to set kvs");
+  }
+}
 
 if (QUICKOPS_KVS_MODE === "GET") {
-  if (!res.ok) {
-    throw new Error("failed to get value: " + res.statusText);
-  }
   const envFile = QUICKOPS_KVS_ENVFILE || LSCBUILD_ENV_FILE || "";
   let exportName = QUICKOPS_KVS_ENVNAME || QUICKOPS_KVS_KEY;
   if (exportName.startsWith("$")) {
